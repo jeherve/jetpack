@@ -161,3 +161,40 @@ function jetpack_dailymotion_embed_reversal( $content ) {
 }
 
 add_filter( 'pre_kses', 'jetpack_dailymotion_embed_reversal' );
+
+/**
+* Grab the ID of a Dailymotion video or Dailymotion shortcode
+*
+* @param $url Can be just the $url or the whole $atts array
+* @return bool|mixed The Dailymotion video ID
+*/
+function jetpack_shortcode_get_dailymotion_id( $url ) {
+	// Do we have an $atts array?  Get first att
+	if ( is_array( $url ) ) {
+		$url = $url[0];
+	}
+
+	$url = parse_url( $url );
+	$id  = false;
+
+	if ( ! isset( $url['query'] ) ) {
+		return false;
+	}
+
+	// Dailymotion Flash URL
+	preg_match( '#<object[^>]+>.+?http://www.dailymotion.com/swf/video/([A-Za-z0-9]+).+?</object>#s', $url, $matches );
+
+	// Dailymotion url
+	if ( ! isset( $matches[1] ) ) {
+		preg_match('#http://www.dailymotion.com/video/([A-Za-z0-9]+)#s', $url, $matches );
+	}
+
+	// Dailymotion iFrame
+	if ( ! isset( $matches[1] ) ) {
+		preg_match('#http://www.dailymotion.com/embed/video/([A-Za-z0-9]+)#s', $url, $matches );
+	}
+
+	$id =  $matches[1];
+
+	return $id;
+}
