@@ -92,6 +92,16 @@ class Jetpack_Media_Summary {
 						}
 						$return['count']['video']++;
 						break;
+					case 'dailymotion':
+						if ( 0 == $return['count']['video'] ) {
+							$return['type'] = 'video';
+							$return['video'] = esc_url_raw( 'http://dailymotion.com/video/' . $extract['shortcode']['dailymotion']['id'][0] );
+							$return['image'] = self::get_video_poster( 'dailymotion', $extract['shortcode']['dailymotion']['id'][0] );
+							$return['secure']['video'] = self::https( $return['video'] );
+							$return['secure']['image'] = self::https( $return['image'] );
+						}
+						$return['count']['video']++;
+						break;
 				}
 			}
 
@@ -99,7 +109,7 @@ class Jetpack_Media_Summary {
 
 		if ( !empty( $extract['has']['embed'] ) ) {
 			foreach( $extract['embed']['url'] as $embed ) {
-				if ( preg_match( '/((youtube|vimeo)\.com|youtu.be)/', $embed ) ) {
+				if ( preg_match( '/((youtube|vimeo|dailymotion)\.com|youtu.be)/', $embed ) ) {
 					if ( 0 == $return['count']['video'] ) {
 						$return['type']   = 'video';
 						$return['video']  = 'http://' .  $embed;
@@ -120,8 +130,10 @@ class Jetpack_Media_Summary {
 								$poster_url_parts = parse_url( $poster_image );
 								$return['secure']['image'] = 'https://secure-a.vimeocdn.com' . $poster_url_parts['path'];
 							}
+						} else if ( false !== strpos( $embed, 'dailymotion' ) ) {
+							$return['image'] = self::get_video_poster( 'dailymotion', jetpack_shortcode_get_dailymotion_id( $return['video'] ) );
+							$return['secure']['image'] = self::https( $return['image'] );
 						}
-
 					}
 					$return['count']['video']++;
 				}
@@ -221,7 +233,9 @@ class Jetpack_Media_Summary {
 				return $video->poster_frame_uri;
 			}
 		} else if ( 'youtube' == $type ) {
-			return  'http://img.youtube.com/vi/'.$id.'/0.jpg';
+			return 'http://img.youtube.com/vi/'.$id.'/0.jpg';
+		} else if ( 'dailymotion' == $type ) {
+			return 'http://www.dailymotion.com/thumbnail/video/'.$id;
 		}
 	}
 
