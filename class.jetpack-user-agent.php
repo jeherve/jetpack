@@ -114,7 +114,7 @@ class Jetpack_User_Agent_Info {
 	 	  	return  'iphone';
 	   	elseif ( $this->is_ipad( 'ipad-safari' ) )
 	   		return 'ipad';
-	   	elseif ( $this->is_android_tablet() ) //keep this check before the android rule
+	   	elseif ( $this->is_android_tablet() || $this->is_galaxy_tab() ) //keep this check before the android rule
 	   		return 'android_tablet';
 	   	elseif ( $this->is_android() )
 	   		return 'android';
@@ -207,7 +207,7 @@ class Jetpack_User_Agent_Info {
    		$this->_platform = self::PLATFORM_IPHONE;
    	}
    	elseif ( strpos( $this->useragent, 'android' ) !== false ) {
-   	 if ( $this->is_android_tablet() )
+   	 if ( $this->is_android_tablet() || $this->is_galaxy_tab() )
    		 $this->_platform = self::PLATFORM_ANDROID_TABLET;
    	 else
    		$this->_platform = self::PLATFORM_ANDROID;
@@ -400,6 +400,7 @@ class Jetpack_User_Agent_Info {
 	static function is_tablet() {
 		return ( 0 // never true, but makes it easier to manage our list of tablet conditions
 				||  self::is_ipad()
+				||  self::is_galaxy_tab()
 				||  self::is_android_tablet()
 				||  self::is_blackberry_tablet()
 				||  self::is_kindle_fire()
@@ -1045,6 +1046,27 @@ class Jetpack_User_Agent_Info {
 				return true;
 		} else
 			return false;
+	}
+
+	/**
+	* Detects if the User Agent includes SCH-I800, common denominator for Galaxy Tab tablets.
+	*
+	* Mozilla/5.0 (Linux; U; Android 2.2; en-us; SCH-I800 Build/FROYO) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1
+	*
+	* @return boolean true if the UA includes SCH-I800 otherwise false
+	*/
+	static function is_galaxy_tab( ) {
+		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
+			return false;
+		}
+
+		$agent       = strtolower( $_SERVER['HTTP_USER_AGENT'] );
+		$pos_schi800 = strpos( $agent, 'SCH-I800' );
+		if ( $pos_schi800 !== false ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
