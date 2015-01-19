@@ -10,7 +10,7 @@ function jetpack_is_mobile( $kind = 'any', $return_matched_agent = false ) {
 	if ( empty( $_SERVER['HTTP_USER_AGENT'] ) || strpos( strtolower( $_SERVER['HTTP_USER_AGENT'] ), 'ipad' ) )
 		return false;
 
-	if( $ua_info->is_android_tablet() &&  $ua_info->is_kindle_touch() === false )
+	if( ( $ua_info->is_android_tablet() || $ua_info->is_galaxy_tab() ) &&  $ua_info->is_kindle_touch() === false )
 		return false;
 
 	if( $ua_info->is_blackberry_tablet() )
@@ -1060,9 +1060,15 @@ class Jetpack_User_Agent_Info {
 		}
 
 		$agent       = strtolower( $_SERVER['HTTP_USER_AGENT'] );
+		$pos_android = strpos( $agent, 'android' );
 		$pos_schi800 = strpos( $agent, 'SCH-I800' );
-		if ( $pos_schi800 !== false ) {
-			return true;
+
+		if ( $pos_android !== false && $pos_schi800 !== false ) {
+			if ( self::is_opera_mini() || self::is_opera_mobile() || self::is_firefox_mobile() ) {
+				return false;
+			} else {
+				return true;
+			}
 		} else {
 			return false;
 		}
