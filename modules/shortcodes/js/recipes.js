@@ -1,4 +1,3 @@
-/* global jetpack_recipes_vars */
 ( function( $ ) {
 	$( window ).load( function() {
 		$( '.jetpack-recipe-print a' ).click( function( event ) {
