@@ -982,18 +982,6 @@ class Jetpack_Likes {
 		if ( is_feed() || is_preview() || $comment_popup ) { // @todo: Remove $comment_popup when 4.5 is minimum.
 			$enabled = false;
 
-		// Don't allow flair to be added to the_content more than once (prevent infinite loops)
-		$done = false;
-		foreach ( $wp_current_filter as $filter ) {
-			if ( 'the_content' == $filter ) {
-				if ( $done ) {
-					$enabled = false;
-				} else {
-					$done = true;
-				}
-			}
-		}
-
 		// Not a feed or preview, so what is it?
 		} else {
 
@@ -1010,6 +998,18 @@ class Jetpack_Likes {
 
 			if ( in_array( 'get_the_excerpt', (array) $wp_current_filter ) ) {
 				$enabled = false;
+			}
+
+			// Don't allow flair to be added to the_content more than once (prevent infinite loops)
+			$done = false;
+			foreach ( $wp_current_filter as $filter ) {
+				if ( 'the_content' == $filter ) {
+					if ( $done ) {
+						$enabled = false;
+					} else {
+						$done = true;
+					}
+				}
 			}
 
 			// Sharing Setting Overrides ****************************************
