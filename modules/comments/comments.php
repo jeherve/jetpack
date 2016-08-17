@@ -99,7 +99,8 @@ class Jetpack_Comments extends Highlander_Comments_Base {
 			'jetpack',
 			'wordpress',
 			'twitter',
-			'facebook'
+			'facebook',
+			'googleplus'
 		);
 	}
 
@@ -152,11 +153,11 @@ class Jetpack_Comments extends Highlander_Comments_Base {
 			return $avatar;
 		}
 
-		// Detect whether it's a Facebook or Twitter avatar
+		// Detect whether it's a Facebook, Twitter, or Google+ avatar
 		$foreign_avatar = get_comment_meta( $comment->comment_ID, 'hc_avatar', true );
 		$foreign_avatar_hostname = parse_url( $foreign_avatar, PHP_URL_HOST );
 		if ( ! $foreign_avatar_hostname ||
-				! preg_match( '/\.?(graph\.facebook\.com|twimg\.com)$/', $foreign_avatar_hostname ) ) {
+				! preg_match( '/\.?(graph\.facebook\.com|twimg\.com|googleusercontent\.com)$/', $foreign_avatar_hostname ) ) {
 			return $avatar;
 		}
 
@@ -457,6 +458,12 @@ class Jetpack_Comments extends Highlander_Comments_Base {
 
 			case 'twitter' :
 				$comment_meta['hc_post_as']         = 'twitter';
+				$comment_meta['hc_avatar']          = stripslashes( $_POST['hc_avatar'] );
+				$comment_meta['hc_foreign_user_id'] = stripslashes( $_POST['hc_userid'] );
+				break;
+
+			case 'googleplus' :
+				$comment_meta['hc_post_as']         = 'googleplus';
 				$comment_meta['hc_avatar']          = stripslashes( $_POST['hc_avatar'] );
 				$comment_meta['hc_foreign_user_id'] = stripslashes( $_POST['hc_userid'] );
 				break;
