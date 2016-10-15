@@ -2443,9 +2443,9 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 			$r .= "\t<div><label class='grunion-field-label" . ( $this->is_error() ? ' form-error' : '' ) . "'>" . esc_html( $field_label ) . ( $field_required ? '<span>' . $required_field_text . '</span>' : '' ) . "</label>\n";
 			foreach ( $this->get_attribute( 'options' ) as $optionIndex => $option ) {
 				$option = Grunion_Contact_Form_Plugin::strip_tags( $option );
-                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? "value='" . esc_attr( $this->get_attribute( 'values' )[ $optionIndex ] ) ."'" : '';
+                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? $this->get_attribute( 'values' )[ $optionIndex ] : $option;
 				$r .= "\t\t<label class='grunion-radio-label radio" . ( $this->is_error() ? ' form-error' : '' ) . "'>";
-				$r .= "<input type='radio' name='" . esc_attr( $field_id ) . "' " . $value . " " . $field_class . " " . checked( $option, $field_value, false ) . " " . ( $field_required ? "required aria-required='true'" : "" ) . "/> ";
+				$r .= "<input type='radio' name='" . esc_attr( $field_id ) . "' value='" . $value . "' " . $field_class . " " . checked( $option, $field_value, false ) . " " . ( $field_required ? "required aria-required='true'" : "" ) . "/> ";
 				$r .= esc_html( $option ) . "</label>\n";
 				$r .= "\t\t<div class='clear-form'></div>\n";
 			}
@@ -2463,9 +2463,9 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 			$r .= "\t<div><label class='grunion-field-label" . ( $this->is_error() ? ' form-error' : '' ) . "'>" . esc_html( $field_label ) . ( $field_required ? '<span>' . $required_field_text . '</span>' : '' ) . "</label>\n";
 			foreach ( $this->get_attribute( 'options' ) as $optionIndex => $option ) {
 				$option = Grunion_Contact_Form_Plugin::strip_tags( $option );
-                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? "value='" . esc_attr( $this->get_attribute( 'values' )[ $optionIndex ] ) ."'" : '';
+                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? $this->get_attribute( 'values' )[ $optionIndex ] : $option;
 				$r .= "\t\t<label class='grunion-checkbox-multiple-label checkbox-multiple" . ( $this->is_error() ? ' form-error' : '' ) . "'>";
-				$r .= "<input type='checkbox' name='" . esc_attr( $field_id ) . "[]' " . $value . " " . $field_class . " " . checked( in_array( $option, (array) $field_value ), true, false ) . " /> ";
+				$r .= "<input type='checkbox' name='" . esc_attr( $field_id ) . "[]' value='" . esc_attr( $value ) . "' " . $field_class . " " . checked( in_array( $option, (array) $field_value ), true, false ) . " /> ";
 				$r .= esc_html( $option ) . "</label>\n";
 				$r .= "\t\t<div class='clear-form'></div>\n";
 			}
@@ -2476,9 +2476,9 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 			$r .= "\t\t<label for='" . esc_attr( $field_id ) . "' class='grunion-field-label select" . ( $this->is_error() ? ' form-error' : '' ) . "'>" . esc_html( $field_label ) . ( $field_required ? '<span>'. $required_field_text . '</span>' : '' ) . "</label>\n";
 			$r .= "\t<select name='" . esc_attr( $field_id ) . "' id='" . esc_attr( $field_id ) . "' " . $field_class . ( $field_required ? "required aria-required='true'" : "" ) . ">\n";
 			foreach ( $this->get_attribute( 'options' ) as $optionIndex => $option ) {
-				$option = Grunion_Contact_Form_Plugin::strip_tags( $option );
-                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? "value='" . esc_attr( $this->get_attribute( 'values' )[ $optionIndex ] ) ."'" : '';
-				$r .= "\t\t<option" . selected( $option, $field_value, false ) . " " . $value . ">" . esc_html( $option ) . "</option>\n";
+                $option = Grunion_Contact_Form_Plugin::strip_tags( $option ); 
+                $value  = ( isset( $this->get_attribute( 'values' )[ $optionIndex ] ) ) ? $this->get_attribute( 'values' )[ $optionIndex ] : $option;
+				$r .= "\t\t<option" . selected( $option, $field_value, false ) . " value='" . $value . "'>" . esc_html( $option ) . "</option>\n";
 			}
 			$r .= "\t</select>\n";
 			$r .= "\t</div>\n";
