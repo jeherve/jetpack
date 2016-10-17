@@ -183,7 +183,7 @@ class Grunion_Contact_Form_Plugin {
 		 *	}
 		 *	add_action('wp_print_styles', 'remove_grunion_style');
 		 */
-		if( is_rtl() ){
+		if ( is_rtl() ){
 			wp_register_style( 'grunion.css', GRUNION_PLUGIN_URL . 'css/rtl/grunion-rtl.css', array(), JETPACK__VERSION );
 		} else {
 			wp_register_style( 'grunion.css', GRUNION_PLUGIN_URL . 'css/grunion.css', array(), JETPACK__VERSION );
@@ -2214,15 +2214,15 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 	 */
 	function __construct( $attributes, $content = null, $form = null ) {
 		$attributes = shortcode_atts( array(
-			'label'       => null,
-			'type'        => 'text',
-			'required'    => false,
-			'options'     => array(),
-			'id'          => null,
-			'default'     => null,
-            'values'      => null,
-			'placeholder' => null,
-			'class'       => null,
+                    'label'       => null,
+                    'type'        => 'text',
+                    'required'    => false,
+                    'options'     => array(),
+                    'id'          => null,
+                    'default'     => null,
+                    'values'      => null,
+                    'placeholder' => null,
+                    'class'       => null,
 		), $attributes, 'contact-field' );
 
 		// special default for subject field
@@ -2240,7 +2240,7 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 		if ( !empty( $attributes['options'] ) && is_string( $attributes['options'] ) ) {
 			$attributes['options'] = array_map( 'trim', explode( ',', $attributes['options'] ) );
 
-            if( !empty( $attributes['values'] ) && is_string( $attributes['values'] ) ) {
+            if ( !empty( $attributes['values'] ) && is_string( $attributes['values'] ) ) {
                 $attributes['values'] = array_map( 'trim', explode( ',', $attributes['values'] ) );
             }
 		}
@@ -2357,7 +2357,7 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
      * @return string
      */
     public function get_option_value( $value, $index, $options ) {
-        if( empty( $value[ $index ] ) ) {
+        if ( empty( $value[ $index ] ) ) {
             return $options;
         }
         return $value[ $index ];
@@ -2489,10 +2489,10 @@ class Grunion_Contact_Form_Field extends Crunion_Contact_Form_Shortcode {
 			$r .= "\n<div>\n";
 			$r .= "\t\t<label for='" . esc_attr( $field_id ) . "' class='grunion-field-label select" . ( $this->is_error() ? ' form-error' : '' ) . "'>" . esc_html( $field_label ) . ( $field_required ? '<span>'. $required_field_text . '</span>' : '' ) . "</label>\n";
 			$r .= "\t<select name='" . esc_attr( $field_id ) . "' id='" . esc_attr( $field_id ) . "' " . $field_class . ( $field_required ? "required aria-required='true'" : "" ) . ">\n";
-			foreach ( $this->get_attribute( 'options' ) as $optionIndex => $option ) {
-                $option = Grunion_Contact_Form_Plugin::strip_tags( $option ); 
-				$r .= "\t\t<option" . selected( $option, $field_value, false ) . " value='" . esc_attr( $this->get_option_value( $this->get_attribute( 'values' ), $optionIndex, $option ) ) . "'>" . esc_html( $option ) . "</option>\n";
-			}
+                        foreach ( $this->get_attribute( 'options' ) as $optionIndex => $option ) {
+                            $option = Grunion_Contact_Form_Plugin::strip_tags( $option ); 
+                            $r .= "\t\t<option" . selected( $option, $field_value, false ) . " value='" . esc_attr( $this->get_option_value( $this->get_attribute( 'values' ), $optionIndex, $option ) ) . "'>" . esc_html( $option ) . "</option>\n";
+                        }
 			$r .= "\t</select>\n";
 			$r .= "\t</div>\n";
 			break;
