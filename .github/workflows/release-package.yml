@@ -1,12 +1,14 @@
 name: "Release a Package update"
 on:
   pull_request:
-    types: closed
-    paths:
-      - 'packages/*'
-      - 'packages/*/*'
-      - 'packages/*/*/*'
-      - 'packages/*/*/*/*'
+    types: opened
+  # pull_request:
+  #   types: closed
+  #   paths:
+  #     - 'packages/*'
+  #     - 'packages/*/*'
+  #     - 'packages/*/*/*'
+  #     - 'packages/*/*/*/*'
 
 jobs:
   release:
