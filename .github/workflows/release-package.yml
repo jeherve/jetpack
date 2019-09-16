@@ -1,7 +1,7 @@
 name: "Release a Package update"
 on:
   pull_request:
-    types: opened
+    types: closed
   # pull_request:
   #   types: closed
   #   paths:
