@@ -48,32 +48,16 @@ if ( ! preg_match( '/^[0-9.]+$/', $argv[2] ) ) {
 }
 $tag_version = $argv[2];
 
-// Update the version numbers of each dependency of the package we are releasing.
-$command = sprintf(
-	'bin/version-packages.sh --package=%1$s --no-update',
-	escapeshellarg( $package_name )
-);
-execute( $command, 'Could not update sub-package dependency versions.', true, true );
+// If we have uncommitted changes, stop.
+$modified_files = exec( 'git status -s --porcelain' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec
 
-// Create a new branch to prepare our release.
-$release_branch = sprintf(
-	'update/jetpack-%1$s-v%2$s',
-	$package_name,
-	$tag_version
-);
+if ( ! empty( $modified_files ) ) {
+	echo 'Uncommitted changes found. Please deal with them and try again clean.';
+	exit;
+}
 
-$command = sprintf(
-	'git checkout -b %1$s',
-	escapeshellarg( $release_branch )
-);
-execute( $command, 'Could not create new release branch.' );
-
-// Commit those changes.
-$command = sprintf(
-	'git add packages/%1$s && git commit -m "Updating dependencies for %1$s"',
-	escapeshellarg( $package_name )
-);
-execute( $command, 'Could not commit dependency version updates.' );
+// Start by starting from a fresh copy of master.
+execute( 'git checkout master && git pull && git reset --hard origin/master', 'Could not switch to an up to date version of master.' );
 
 // Create the new tag in the main repository.
 $main_repo_tag = 'automattic/jetpack-' . $package_name . '@' . $tag_version;
@@ -85,9 +69,8 @@ execute( $command, 'Could not tag the new package version in the main repository
 
 // Do the magic: bring the subdirectory contents (and history of non-empty commits) onto the master branch.
 $command = sprintf(
-	'git filter-branch -f --prune-empty --subdirectory-filter %1$s %2$s',
-	escapeshellarg( 'packages/' . $package_name ),
-	escapeshellarg( $release_branch )
+	'git filter-branch -f --prune-empty --subdirectory-filter %s master',
+	escapeshellarg( 'packages/' . $package_name )
 );
 execute( $command, 'Could not filter the branch to the package contents.', true );
 
@@ -102,8 +85,34 @@ $command          = sprintf(
 );
 execute( $command, 'Could not add the new package repository remote.', true, true );
 
+// Update the version numbers of each dependency of the package we are releasing.
+execute( 'bin/version-packages.sh --no-update', 'Could not update sub-package dependency versions.', true, true );
+
+// Create a new branch to prepare our release.
+$release_branch = sprintf(
+	'update/jetpack-%1$s-v%2$s',
+	$package_name,
+	$tag_version
+);
+$command        = sprintf(
+	'git checkout -b %1$s',
+	escapeshellarg( $release_branch )
+);
+execute( $command, 'Could not create new release branch.' );
+
+// Commit those changes.
+$command = sprintf(
+	'git add composer.json && git commit -m "Updating dependencies for %1$s"',
+	escapeshellarg( $package_name )
+);
+execute( $command, 'Could not commit dependency version updates.' );
+
 // Push the contents to the package repository.
-execute( 'git push package master --force', 'Could not push to the new package repository.', true, true );
+$command = sprintf(
+	'git push package %1$s --force',
+	escapeshellarg( $release_branch )
+);
+execute( $command, 'Could not push to the new package repository.', true, true );
 
 // Grab all the existing tags from the package repository.
 execute( 'git fetch -f --tags', 'Could not fetch the existing tags of the package.', true, true );
@@ -114,13 +123,6 @@ $command = sprintf(
 	escapeshellarg( $tag_version )
 );
 execute( $command, 'Could not tag the new version in the package repository.', true, true );
-
-// Push the release branch to the main repository.
-$command = sprintf(
-	'git push origin %1$s',
-	escapeshellarg( $release_branch )
-);
-execute( $command, 'Could not push the release branch to the main repository.', true, true );
 
 // Push the new package tag to the main repository.
 $command = sprintf(
