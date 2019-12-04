@@ -76,7 +76,7 @@ $command = sprintf(
 execute( $command, 'Could not commit dependency version updates.' );
 
 // Create the new tag in the main repository.
-$main_repo_tag = 'automattic/jetpack-' . $package_name . '@' . $tag_version;
+$main_repo_tag = 'jeherve/jetpack-' . $package_name . '@' . $tag_version;
 $command       = sprintf(
 	'git tag -a %1$s -m "%1$s"',
 	escapeshellarg( $main_repo_tag )
@@ -93,7 +93,7 @@ execute( $command, 'Could not filter the branch to the package contents.', true 
 
 // Add the corresponding package repository as a remote.
 $package_repo_url = sprintf(
-	'git@github.com:Automattic/jetpack-%s.git',
+	'git@github.com:jeherve/jetpack-%s.git',
 	$package_name
 );
 $command          = sprintf(
@@ -117,14 +117,14 @@ execute( $command, 'Could not tag the new version in the package repository.', t
 
 // Push the release branch to the main repository.
 $command = sprintf(
-	'git push origin %1$s',
+	'git push jeherve %1$s',
 	escapeshellarg( $release_branch )
 );
 execute( $command, 'Could not push the release branch to the main repository.', true, true );
 
 // Push the new package tag to the main repository.
 $command = sprintf(
-	'git push origin %s',
+	'git push jeherve %s',
 	escapeshellarg( $main_repo_tag )
 );
 execute( $command, 'Could not push the new package version tag to the main repository.', true, true );
