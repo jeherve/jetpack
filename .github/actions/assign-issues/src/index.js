@@ -17,7 +17,7 @@ async function run() {
 	const eventPayload = context.payload;
 
 	// Look for words indicating that a PR fixes an issue.
-	const regex = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:\#?|https?:\/\/github\.com\/jeherve\/jetpack\/issues\/)(\d+)/gi;
+	const regex = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:\#?|https?:\/\/github\.com\/automattic\/jetpack\/issues\/)(\d+)/gi;
 
 	let match;
 	while ( ( match = regex.exec( eventPayload.pull_request.body ) ) ) {
