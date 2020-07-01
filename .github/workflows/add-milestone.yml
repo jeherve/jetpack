@@ -1,0 +1,27 @@
+name: "Add a milestone when a PR gets merged"
+on:
+  push:
+    branches:
+      - master # Every time a PR is merged to master.
+      - add/repo-gardening-milestone-action
+
+jobs:
+  add-milestone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      - name: Building Action
+        run: npm install
+        working-directory: ./.github/actions/add-milestone
+
+      - name: Add a milestone when a PR gets merged
+        uses: ./.github/actions/add-milestone
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

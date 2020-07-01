@@ -1,0 +1,19 @@
+{
+	"name": "add-milestone",
+	"version": "1.0.0",
+	"description": "Add a milestone when a PR gets merged",
+	"author": "Automattic",
+	"license": "GPL-2.0-or-later",
+	"keywords": [
+		"wordpress",
+		"jetpack",
+		"github",
+		"action"
+	],
+	"main": "index.js",
+	"dependencies": {
+		"@actions/core": "^1.2.3",
+		"@actions/github": "^2.1.1"
+	},
+	"private": true
+}
