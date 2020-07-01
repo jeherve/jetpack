@@ -11,7 +11,7 @@ jobs:
       # Install Node 12
       - uses: actions/setup-node@v1
         with:
-          version: 12
+          node-version: 12
       - run: node .github/actions/assign-issues.js
         env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
