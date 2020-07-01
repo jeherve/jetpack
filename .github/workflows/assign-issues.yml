@@ -13,5 +13,5 @@ jobs:
         with:
           version: 12
       - run: node .github/actions/assign-issues.js
-        with:
+        env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
