@@ -15,7 +15,7 @@ jobs:
           node-version: 12
 
       - name: Building Action
-        run: npm i && npm run build
+        run: npm install
         working-directory: ./.github/actions/assign-issues
 
       - name: Check if a PR fixes an issue
