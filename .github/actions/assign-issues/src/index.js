@@ -1,13 +1,24 @@
+/**
+ * External dependencies
+ */
+const { setFailed, getInput } = require( '@actions/core' );
+const { context, GitHub } = require( '@actions/github' );
+
 async function run() {
 	console.log( `it's running!` );
-	/*
-	 * See https://github.com/octokit/action.js/ for more info
-	 */
-	const octokit = new Octokit();
+
+	const token = getInput( 'token' );
+	if ( ! token ) {
+		setFailed( 'main: Input `token` is required' );
+		return;
+	}
+
+	const octokit = new GitHub( token );
 
 	// Get info about the event.
-	const eventPayload = require( process.env.GITHUB_EVENT_PATH );
+	const eventPayload = context.payload;
 	console.log( `Our event payload is ${ eventPayload }` );
+
 	// Look for words indicating that a PR fixes an issue.
 	const regex = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:\#?|https?:\/\/github\.com\/jeherve\/jetpack\/issues\/)(\d+)/gi;
 
@@ -35,3 +46,5 @@ async function run() {
 		console.log( `Label added: ${ addLabel }` );
 	}
 }
+
+run();
