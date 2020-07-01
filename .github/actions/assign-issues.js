@@ -1,4 +1,5 @@
 async function run() {
+	console.log( `it's running!` );
 	/*
 	 * See https://github.com/octokit/action.js/ for more info
 	 */
