@@ -8,7 +8,7 @@ jobs:
   triage:
     name: "Label PRs"
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/labeler@v2
         with:
@@ -16,14 +16,8 @@ jobs:
   review-crew-afk:
     name: "Review check"
     runs-on: ubuntu-latest
-    #if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true && github.event.label.name == '[Status] Needs Review'
+    if: github.event_name == 'pull_request' && github.event.pull_request.action == 'labeled' && github.event.label.name == '[Status] Needs Review'
     steps:
-      - name: testing
-        uses: actions/github-script@0.8.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            console.log( JSON.stringify( github.event ) )
       - name: Comment
         uses: actions/github-script@0.8.0
         with:
