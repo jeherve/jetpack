@@ -21,7 +21,6 @@ async function addMilestone( payload, octokit ) {
 	const prNumber = getAssociatedPullRequest( payload.commits[ 0 ] );
 	if ( ! prNumber ) {
 		debug( 'add-milestone: Commit is not a squashed PR. Aborting' );
-		setFailed( 'Commit is not a squashed PR. Aborting' );
 		return;
 	}
 

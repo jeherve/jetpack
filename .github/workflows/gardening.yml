@@ -1,8 +1,8 @@
-name: "Assign, label, manage milestones, for issues and PRs."
+name: "Assign, label issues and PRs."
 on:
   pull_request: # When a PR is opened, edited, updated, or a label is added.
     types: [opened, synchronize, labeled, edited]
-  push: # When a push happens, including pushes to master (merged PRs).
+  #push: # When a push happens, including pushes to master (merged PRs).
 
 jobs:
   triage:
