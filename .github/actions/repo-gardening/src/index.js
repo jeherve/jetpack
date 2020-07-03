@@ -15,7 +15,7 @@ const ifNotFork = require( './if-not-fork' );
 const automations = [
 	{
 		event: 'pull_request',
-		action: 'opened',
+		action: [ 'opened', 'synchronize', 'edited' ],
 		task: ifNotFork( assignIssues ),
 	},
 	{
@@ -35,13 +35,14 @@ const automations = [
 
 	// Get info about the event.
 	const eventPayload = context.payload;
+	const eventAction = eventPayload.action;
 
 	debug( `main: Received event = '${ context.eventName }', action = '${ eventPayload.action }'` );
 
 	for ( const { event, action, task } of automations ) {
 		if (
 			event === context.eventName &&
-			( action === undefined || action === eventPayload.action )
+			( action === undefined || action.includes( eventAction ) )
 		) {
 			try {
 				debug( `main: Starting task ${ task.name }` );
