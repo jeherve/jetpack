@@ -16,7 +16,7 @@ jobs:
   review-crew-afk:
     name: "Review check"
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true && github.event.label.name == '[Status] Needs Review'
+    #if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true && github.event.label.name == '[Status] Needs Review'
     steps:
       - name: testing
         uses: actions/github-script@0.8.0
