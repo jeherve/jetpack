@@ -2,7 +2,9 @@ name: Gardening
 on:
   pull_request: # When a PR is opened, edited, updated, or a label is added.
     types: [opened, synchronize, labeled, edited]
-  #push: # When a push happens, including pushes to master (merged PRs).
+  push:
+    branches:
+      - master # Every time a PR is merged to master.
 
 jobs:
   triage:
