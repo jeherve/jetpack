@@ -1,10 +1,10 @@
-name: Build different versions of a branch
+name: Build artifacts
 on: push
 
 jobs:
   build_master_job:
+    name: Master
     runs-on: ubuntu-latest
-    name: Build production version of master to master-built branch!
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Jetpack
@@ -16,6 +16,7 @@ jobs:
           branch_push: 'master-built'
           commit_message: 'Automated production build from master'
   build_beta:
+    name: Beta
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Jetpack

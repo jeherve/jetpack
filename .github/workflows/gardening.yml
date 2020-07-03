@@ -1,4 +1,4 @@
-name: "Assign, label issues and PRs."
+name: Gardening
 on:
   pull_request: # When a PR is opened, edited, updated, or a label is added.
     types: [opened, synchronize, labeled, edited]
@@ -6,7 +6,7 @@ on:
 
 jobs:
   triage:
-    name: "Label PRs that need it"
+    name: "Label PRs"
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true
     steps:
@@ -14,7 +14,7 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
   review-crew-afk:
-    name: "If Crew is not around, comment on Needs Review label"
+    name: "Review check"
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.labeled == true && github.event.label.name == '[Status] Needs Review'
     steps:
@@ -30,7 +30,7 @@ jobs:
               body: 'Howdy! The Jetpack team has disappeared for a few days to a secret island lair to concoct new ways to make Jetpack one hundred billion percent better. As a result, your Pull Request may not be reviewed right away. Do not worry, we will be back next week to look at your work! Thank you for your understanding.'
             })
   repo-gardening:
-    name: "Assign, manage milestones, for issues and PRs."
+    name: "Manage labels and assignees"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
