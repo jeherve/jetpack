@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-    - uses: actions/labeler@v2
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/labeler@v2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
   review-crew-afk:
     name: "If Crew is not around, comment on Needs Review label"
     runs-on: ubuntu-latest
@@ -20,7 +20,7 @@ jobs:
       - name: Comment
         uses: actions/github-script@0.8.0
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.issues.createComment({
               issue_number: context.issue.number,
@@ -47,4 +47,4 @@ jobs:
       - name: Check if a PR fixes an issue
         uses: ./.github/actions/repo-gardening
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
