@@ -1,5 +1,5 @@
 # Jetpack Asset Management
-a change here and here
+
 A package containing functionality to manipulate paths and enqueing async scripts.
 
 ### Usage TODO
