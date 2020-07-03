@@ -7,7 +7,7 @@ jobs:
   triage:
     name: "Label PRs that need it"
     runs-on: ubuntu-latest
-    if: github.event_name === 'pull_request'
+    if: github.event_name == 'pull_request'
     steps:
     - uses: actions/labeler@v2
       with:
@@ -15,7 +15,7 @@ jobs:
   review-crew-afk:
     name: "If Crew is not around, comment on Needs Review label"
     runs-on: ubuntu-latest
-    if: github.event.label.name === '[Status] Needs Review'
+    if: github.event.label.name == '[Status] Needs Review'
     steps:
       - name: Comment
         uses: actions/github-script@0.8.0
