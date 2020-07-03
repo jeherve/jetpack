@@ -1,7 +1,20 @@
-name: "Beta builder"
+name: Build different versions of a branch
 on: push
 
 jobs:
+  build_master_job:
+    runs-on: ubuntu-latest
+    name: Build production version of master to master-built branch!
+    if: github.ref === 'refs/heads/master'
+    steps:
+      - name: Checkout Jetpack
+        uses: actions/checkout@master
+      - name: Build production version
+        uses: automattic/action-jetpack-build-to-branch@master
+        with:
+          branch_pull: 'master'
+          branch_push: 'master-built'
+          commit_message: 'Automated production build from master'
   build_beta:
     runs-on: ubuntu-latest
     steps:

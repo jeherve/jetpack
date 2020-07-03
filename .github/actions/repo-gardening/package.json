@@ -1,7 +1,7 @@
 {
-	"name": "add-milestone",
+	"name": "repo-gardening",
 	"version": "1.0.0",
-	"description": "Add a milestone when a PR gets merged",
+	"description": "Assign, manage milestones, for issues and PRs.",
 	"author": "Automattic",
 	"license": "GPL-2.0-or-later",
 	"keywords": [
