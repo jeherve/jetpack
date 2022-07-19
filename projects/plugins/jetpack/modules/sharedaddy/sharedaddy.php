@@ -2,6 +2,7 @@
 /**
  * Jetpack's Sharing feature, nee Sharedaddy.
  * The most super duper sharing tool on the interwebs.
+ * and a change
  *
  * @package automattic/jetpack
  */
