@@ -268,7 +268,7 @@ async function triageIssues( payload, octokit ) {
 
 			// If we're adding a TBD priority, if we're in the Calypso repo, if that's a bug,
 			// send a Slack notification.
-			if ( priority === 'TBD' && full_name === 'Automattic/wp-calypso' && isBugIssue ) {
+			if ( priority === 'TBD' && full_name === 'jeherve/jetpack' && isBugIssue ) {
 				debug(
 					`triage-issues: #${ number } doesn't have a Priority set. Sending in Slack message to the Kitkat team.`
 				);
