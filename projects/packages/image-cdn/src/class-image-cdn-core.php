@@ -1,6 +1,6 @@
 <?php
 /**
- * Core Image CDN functionality.
+ * Core Image CDN functionality and a change.
  *
  * It should be available even if Image CDN is not active.
  *
