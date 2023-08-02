@@ -1,6 +1,6 @@
 <?php
 /**
- * Launchpad Task Lists Registry
+ * Launchpad Task Lists Registry and a change
  *
  * @package automattic/jetpack-mu-wpcom
  * @since 1.5.0
