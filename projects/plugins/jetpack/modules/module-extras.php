@@ -3,6 +3,7 @@
  * Load module code that is needed even when a module isn't active.
  * For example, if a module shouldn't be activatable unless certain conditions are met,
  * the code belongs in this file.
+ * And changes
  *
  * @package automattic/jetpack
  */
