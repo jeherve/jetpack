@@ -1,6 +1,6 @@
 <?php
 /**
- * Premium Content Block.
+ * Paid Content Block.
  *
  * @package automattic/jetpack
  */
