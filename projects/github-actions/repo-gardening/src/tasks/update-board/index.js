@@ -1,31 +1,13 @@
 const { getInput, setFailed } = require( '@actions/core' );
 const { getOctokit } = require( '@actions/github' );
 const debug = require( '../../utils/debug' );
-const getLabels = require( '../../utils/get-labels' );
+const getLabels = require( '../../utils/labels/get-labels' );
+const hasPriorityLabels = require( '../../utils/labels/has-priority-labels' );
+const isBug = require( '../../utils/labels/is-bug' );
+const notifyImportantIssues = require( '../../utils/slack/notify-important-issues' );
+const { automatticAssignments } = require( './automattic-label-team-assignments' );
 
 /* global GitHub, WebhookPayloadIssue */
-
-/**
- * Check for Priority labels on an issue.
- * It could be existing labels,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @returns {Promise<Array>} Promise resolving to an array of Priority labels.
- */
-async function hasPriorityLabels( octokit, owner, repo, number, action, eventLabel ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	if ( 'labeled' === action && eventLabel.name && eventLabel.name.match( /^\[Pri\].*$/ ) ) {
-		labels.push( eventLabel.name );
-	}
-
-	return labels.filter( label => label.match( /^\[Pri\].*$/ ) && label !== '[Pri] TBD' );
-}
 
 /**
  * Check if an issue has a "Triaged" label.
@@ -73,32 +55,6 @@ async function needsThirdPartyFix( octokit, owner, repo, number, action, eventLa
 	}
 
 	return labels.some( label => label.match( /^\[Status\] Needs (3rd Party|Core) Fix$/ ) );
-}
-
-/**
- * Ensure the issue is a bug, by looking for a "[Type] Bug" label.
- * It could be an existing label,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function isBug( octokit, owner, repo, number, action, eventLabel ) {
-	// If the issue has a "[Type] Bug" label, it's a bug.
-	const labels = await getLabels( octokit, owner, repo, number );
-	if ( labels.includes( '[Type] Bug' ) ) {
-		return true;
-	}
-
-	// Next, check if the current event was a [Type] Bug label being added.
-	if ( 'labeled' === action && eventLabel.name && '[Type] Bug' === eventLabel.name ) {
-		return true;
-	}
 }
 
 /**
@@ -181,6 +137,14 @@ async function getProjectDetails( octokit, projectBoardLink ) {
 	);
 	if ( statusField ) {
 		projectInfo.status = statusField; // Info about our Status column (id as well as possible values).
+	}
+
+	// Extract the ID of the Team field.
+	const teamField = projectDetails[ projectInfo.ownerType ]?.projectV2.fields.nodes.find(
+		field => field.name === 'Team'
+	);
+	if ( teamField ) {
+		projectInfo.team = teamField; // Info about our Team column (id as well as possible values).
 	}
 
 	return projectInfo;
@@ -394,6 +358,165 @@ async function setStatusField( octokit, projectInfo, projectItemId, statusText )
 }
 
 /**
+ * Update the "Team" field in our project board.
+ *
+ * @param {GitHub} octokit       - Initialized Octokit REST client.
+ * @param {object} projectInfo   - Info about our project board.
+ * @param {string} projectItemId - The ID of the project item.
+ * @param {string} team          - Team that should be assigned to our issue (must match an existing column in the project board).
+ * @returns {Promise<string>} - The new project item id.
+ */
+async function setTeamField( octokit, projectInfo, projectItemId, team ) {
+	const {
+		projectNodeId, // Project board node ID.
+		team: {
+			id: teamFieldID, // ID of the status field.
+			options,
+		},
+	} = projectInfo;
+
+	// Find the ID of the team option that matches our issue team.
+	const teamOptionId = options.find( option => option.name === team )?.id;
+	if ( ! teamOptionId ) {
+		debug(
+			`update-board: Team "${ team }" does not exist as a column option in the project board.`
+		);
+		return '';
+	}
+
+	const projectNewItemDetails = await octokit.graphql(
+		`mutation ( $input: UpdateProjectV2ItemFieldValueInput! ) {
+			set_team: updateProjectV2ItemFieldValue( input: $input ) {
+				projectV2Item {
+					id
+				}
+			}
+		}`,
+		{
+			input: {
+				projectId: projectNodeId,
+				itemId: projectItemId,
+				fieldId: teamFieldID,
+				value: {
+					singleSelectOptionId: teamOptionId,
+				},
+			},
+		}
+	);
+
+	const newProjectItemId = projectNewItemDetails.set_team.projectV2Item.id;
+	if ( ! newProjectItemId ) {
+		debug( `update-board: Failed to set the "${ team }" team for this project item.` );
+		return '';
+	}
+
+	debug( `update-board: Project item ${ newProjectItemId } was assigned to the "${ team }" team.` );
+
+	return newProjectItemId; // New Project item ID (what we just edited). String.
+}
+
+/**
+ * Load a mapping of teams <> labels from a file.
+ *
+ * @param {string} ownerLogin - Repository owner login.
+ *
+ * @returns {Promise<Object>} - Mapping of teams <> labels.
+ */
+async function loadTeamAssignments( ownerLogin ) {
+	// If we're in an Automattic repo, we can use the team assignments file that ships with this action.
+	if ( 'automattic' === ownerLogin ) {
+		return automatticAssignments;
+	}
+
+	const teamAssignmentsString = getInput( 'labels_team_assignments' );
+	if ( ! teamAssignmentsString ) {
+		debug(
+			`update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+		);
+		return {};
+	}
+
+	const teamAssignments = JSON.parse( teamAssignmentsString );
+	// Check if it is a valid object and includes information about teams and labels.
+	if (
+		! teamAssignments ||
+		! Object.keys( teamAssignments ).length ||
+		! Object.values( teamAssignments ).some( assignment => assignment.team ) ||
+		! Object.values( teamAssignments ).some( assignment => assignment.labels )
+	) {
+		debug(
+			`update-board: Invalid mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+		);
+		return {};
+	}
+
+	return teamAssignments;
+}
+
+/**
+ * Check if an issue has a label that matches a team.
+ * If so, assign the issue to that team on the project board.
+ * If not, do nothing.
+ * It could be an existing label,
+ * or it could be that it's being added as part of the event that triggers this action.
+ *
+ * @param {GitHub} octokit    - Initialized Octokit REST client.
+ * @param {object} payload    - Issue event payload.
+ * @param {object} projectInfo - Info about our project board.
+ * @param {string} projectItemId - The ID of the project item.
+ * @param {Array} priorityLabels - Array of priority labels.
+ * @returns {Promise<boolean>} Promise resolving to true if the issue was assigned to a team.
+ */
+async function assignTeam( octokit, payload, projectInfo, projectItemId, priorityLabels ) {
+	const {
+		action,
+		issue: { number },
+		label = {},
+		repository: { owner, name },
+	} = payload;
+	const ownerLogin = owner.login;
+
+	const teamAssignments = await loadTeamAssignments( ownerLogin );
+	if ( ! teamAssignments ) {
+		debug(
+			`update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+		);
+		return;
+	}
+
+	// Get the list of labels associated with this issue.
+	const labels = await getLabels( octokit, ownerLogin, name, number );
+	if ( 'labeled' === action && label.name ) {
+		labels.push( label.name );
+	}
+
+	// Check if any of the labels on this issue match a team.
+	// Loop through all the mappings in team assignments,
+	// and find the first one that includes a label that matches one present in the issue.
+	const { team, slack_id } =
+		Object.values( teamAssignments ).find( assignment =>
+			labels.some( mappedLabel => assignment.labels.includes( mappedLabel ) )
+		) || {};
+	if ( ! team ) {
+		debug(
+			`update-board: Issue #${ number } does not have a label that matches a team. Aborting.`
+		);
+		return false;
+	}
+
+	// Set the status field for this project item.
+	debug(
+		`update-board: Assigning the "${ team }" team for this project item, issue #${ number }.`
+	);
+	await setTeamField( octokit, projectInfo, projectItemId, team );
+
+	// Does the team want to be notified in Slack about high/blocker priority issues?
+	if ( slack_id && priorityLabels.length > 0 ) {
+		await notifyImportantIssues( octokit, payload, slack_id );
+	}
+}
+
+/**
  * Automatically update specific columns in our common GitHub project board,
  * to match labels applied to issues.
  *
@@ -533,5 +656,8 @@ async function updateBoard( payload, octokit ) {
 		);
 		await setStatusField( projectOctokit, projectInfo, projectItemId, 'Triaged' );
 	}
+
+	// Try to assign the issue to a specific team, if we have a mapping of teams <> labels and a matching label on the issue.
+	await assignTeam( projectOctokit, payload, projectInfo, projectItemId, priorityLabels );
 }
 module.exports = updateBoard;
