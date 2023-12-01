@@ -155,6 +155,12 @@ export const automatticAssignments = {
 		slack_id: 'C02TQF5VAJD',
 		board_id: 'https://github.com/orgs/Automattic/projects/460',
 	},
+	'Exploration tools': {
+		team: 'Korvax',
+		labels: [ '[Feature] Multi-tool', '[Block] Thing' ],
+		slack_id: 'CN2FSK7L4',
+		board_id: 'https://github.com/users/jeherve/projects/3',
+	},
 	// Let this be the last item. It will act as a catch-all for any issues that haven't been matched until now.
 	'Jetpack plugin': {
 		team: 'Jetpack',
