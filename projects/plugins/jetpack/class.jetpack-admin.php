@@ -1,6 +1,6 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
- * Build the Jetpack admin menu as a whole.
+ * Build the Jetpack admin menu as a whole. and a change
  *
  * @package automattic/jetpack
  */
