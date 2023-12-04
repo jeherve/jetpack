@@ -1,6 +1,6 @@
 <?php
 /**
- * Jetpack's Pre-Connection JITMs class.
+ * Jetpack's Pre-Connection JITMs class. and a change
  *
  * @package jetpack
  */
