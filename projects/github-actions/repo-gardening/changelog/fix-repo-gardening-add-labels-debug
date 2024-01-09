@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Automatic labeling: fix detection of files changed in a PR.

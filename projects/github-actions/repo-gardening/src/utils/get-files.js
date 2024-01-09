@@ -29,6 +29,8 @@ async function getFiles( octokit, owner, repo, number ) {
 		pull_number: +number,
 		per_page: 100,
 	} ) ) {
+		debug( `get-files: Got ${ response.data.length } files from ${ cacheKey }.` );
+		debug( response.data );
 		response.data.map( file => {
 			fileList.push( file.filename );
 			if ( file.previous_filename ) {

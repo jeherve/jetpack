@@ -71,6 +71,9 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft, isRevert )
 
 	debug( 'add-labels: Loop through all files modified in this PR and add matching labels.' );
 
+	debug( `add-labels: Found ${ files.length } files modified in this PR` );
+	debug( `add-labels: Files: ${ files }` );
+
 	files.map( file => {
 		// Projects.
 		const project = file.match( /^projects\/(?<ptype>[^/]*)\/(?<pname>[^/]*)\// );
