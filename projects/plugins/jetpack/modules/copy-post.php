@@ -1,6 +1,6 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
- * Module Name: Copy Post
+ * Module Name: Copy Post and atest
  * Module Description: Enable the option to copy entire posts and pages, including tags and settings
  * Sort Order: 15
  * First Introduced: 7.0
