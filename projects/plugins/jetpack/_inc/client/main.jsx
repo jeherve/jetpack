@@ -1,4 +1,4 @@
-import { imagePath } from 'constants/urls';
+import { imagePath } from 'constants/urls'; // chnage
 import restApi from '@automattic/jetpack-api';
 import { getRedirectUrl } from '@automattic/jetpack-components';
 import { ConnectScreen, CONNECTION_STORE_ID } from '@automattic/jetpack-connection';
