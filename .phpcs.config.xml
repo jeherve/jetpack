@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- This file configures everything except the list of rules. -->
+<!-- This file configures everyand atrathing except the list of rules. -->
 <!-- The separation is so .github/files/phpcompatibility-dev-phpcs.xml can use the same config with a different rule set. -->
 <ruleset>
 	<config name="minimum_supported_wp_version" value="6.5" />
