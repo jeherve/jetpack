@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Milestone: Add support for `<plugin>/next` milestone names.

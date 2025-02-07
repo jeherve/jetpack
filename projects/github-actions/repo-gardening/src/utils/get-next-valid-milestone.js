@@ -49,7 +49,7 @@ async function getOpenMilestones( octokit, owner, repo ) {
  */
 async function getNextValidMilestone( octokit, owner, repo, plugin = 'jetpack' ) {
 	// Find all valid milestones for the specified plugin.
-	const reg = new RegExp( '^' + plugin + '\\/\\d+\\.\\d' );
+	const reg = new RegExp( '^' + plugin + '\\/(\\d+\\.\\d|next)' );
 	const milestones = ( await getOpenMilestones( octokit, owner, repo ) )
 		.filter( m => m.title.match( reg ) )
 		.filter( m => {
@@ -61,9 +61,18 @@ async function getNextValidMilestone( octokit, owner, repo, plugin = 'jetpack' )
 			const match = m.description?.match( /(?:Code Freeze|Branch Cut): (\d{4}-\d{2}-\d{2})/ );
 			return ! ( match && moment( match[ 1 ] ) < moment() );
 		} )
-		.sort( ( m1, m2 ) =>
-			compareVersions( m1.title.split( '/' )[ 1 ], m2.title.split( '/' )[ 1 ] )
-		);
+		.sort( ( m1, m2 ) => {
+			const v1 = m1.title.split( '/' )[ 1 ];
+			const v2 = m2.title.split( '/' )[ 1 ];
+
+			// `next` is placeholder version name that represents the immediate next version.
+			// It should be the first item in the list.
+			if ( v1 === 'next' ) return -1;
+			if ( v2 === 'next' ) return 1;
+
+			// Otherwise compare versions normally
+			return compareVersions( v1, v2 );
+		} );
 
 	// Return the first milestone with a future due date,
 	// or failing that the first milestone with no due date.
