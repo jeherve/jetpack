@@ -82,3 +82,4 @@ jobs:
           triage_projects_token: ${{ secrets.PROJECT_AUTOMATION_TOKEN }}
           project_board_url: ${{ vars.PROJECT_BOARD_URL }}
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          ai_labeling_enabled: ${{ 'true' }}
