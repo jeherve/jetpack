@@ -131,98 +131,12 @@ class Jetpack_About_Page extends Jetpack_Admin_Page {
 					</svg>
 				</div>
 				<div class="jetpack-about__content">
-					<div class="jetpack-about__images">
-						<ul class="jetpack-about__gravatars">
-							<?php $this->display_gravatars(); ?>
-						</ul>
-						<p class="meet-the-team">
-							<a href="https://automattic.com/about/" target="_blank" rel="noopener noreferrer" class="jptracks" data-jptracks-name="jetpack_about_meet_the_team"><?php esc_html_e( 'Meet the Automattic team', 'jetpack' ); ?></a>
-							<svg class="gridicons-external" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M19 13v6c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V7c0-1.105.895-2 2-2h6v2H5v12h12v-6h2zM13 3v2h4.586l-7.793 7.793 1.414 1.414L19 6.414V11h2V3h-8z"></path></g></svg>
-						</p>
-					</div>
-
 					<div class="jetpack-about__text">
 						<p>
-							<?php esc_html_e( 'We are the people behind WordPress.com, WooCommerce, Jetpack, Simplenote, Longreads, VaultPress, Akismet, Gravatar, Crowdsignal, Cloudup, and more. We believe in making the web a better place.', 'jetpack' ); ?>
-							<a href="https://automattic.com/" target="_blank" rel="noopener noreferrer" class="jptracks" data-jptracks-name="jetpack_about_learn_more">
-								<?php esc_html_e( 'Learn more about us', 'jetpack' ); ?>
-							</a>
-							<svg class="gridicons-external" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M19 13v6c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V7c0-1.105.895-2 2-2h6v2H5v12h12v-6h2zM13 3v2h4.586l-7.793 7.793 1.414 1.414L19 6.414V11h2V3h-8z"></path></g></svg>
-						</p>
-						<p>
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: first placeholder is the number of Automattic employees. The second is the number of countries of origin*/
-									__( 'We’re a distributed company with over %1$s Automatticians in more than %2$s countries speaking at least %3$s different languages. Our common goal is to democratize publishing so that anyone with a story can tell it, regardless of income, gender, politics, language, or where they live in the world.', 'jetpack' ),
-									$this->a8c_data['a12s'],
-									$this->a8c_data['countries'],
-									$this->a8c_data['languages']
-								)
-							);
-							?>
-						</p>
-						<p>
-							<?php esc_html_e( 'We believe in Open Source and the vast majority of our work is available under the GPL.', 'jetpack' ); ?>
-						</p>
-						<p>
-							<?php
-								// Maybe use printf() because we'll want to escape the string but still allow for the link, so we can't use esc_html_e().
-								echo wp_kses(
-									__( 'We strive to live by the <a href="https://automattic.com/creed/" target="_blank" class="jptracks" data-jptracks-name="jetpack_about_creed" rel="noopener noreferrer">Automattic Creed</a><svg class="gridicons-external" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M19 13v6c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V7c0-1.105.895-2 2-2h6v2H5v12h12v-6h2zM13 3v2h4.586l-7.793 7.793 1.414 1.414L19 6.414V11h2V3h-8z"></path></g></svg>', 'jetpack' ),
-									array(
-										'a'    => array(
-											'href'   => array(),
-											'class'  => array(),
-											'target' => array(),
-											'rel'    => array(),
-											'data-jptracks-name' => array(),
-										),
-										'svg'  => array(
-											'class'   => array(),
-											'height'  => array(),
-											'width'   => array(),
-											'xmlns'   => array(),
-											'viewbox' => array(),
-										),
-										'g'    => array(),
-										'path' => array(
-											'd' => array(),
-										),
-									)
-								);
-							?>
-						</p>
-						<p>
-							<a href="https://automattic.com/work-with-us" target="_blank" rel="noopener noreferrer" class="jptracks" data-jptracks-name="jetpack_about_work_with_us"><?php esc_html_e( 'Come work with us', 'jetpack' ); ?>
-							</a><svg class="gridicons-external" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M19 13v6c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V7c0-1.105.895-2 2-2h6v2H5v12h12v-6h2zM13 3v2h4.586l-7.793 7.793 1.414 1.414L19 6.414V11h2V3h-8z"></path></g></svg>
+							<?php esc_html_e( 'The developers would prefer to keep the credits a secret.', 'jetpack' ); ?>
 						</p>
 					</div>
 				</div>
-			</div>
-
-			<div class="jetpack-about__colophon">
-				<h3><?php esc_html_e( 'Popular WordPress services by Automattic', 'jetpack' ); ?></h3>
-				<ul class="jetpack-about__services">
-				<?php $this->display_plugins(); ?>
-				</ul>
-
-				<p class="jetpack-about__services-more">
-				<?php
-				echo wp_kses(
-					__( 'For even more of our WordPress plugins, please take a look at <a href="https://profiles.wordpress.org/automattic/#content-plugins" target="_blank" rel="noopener noreferrer" class="jptracks" data-jptracks-name="jetpack_about_wporg_profile">our WordPress.org profile</a>.', 'jetpack' ),
-					array(
-						'a' => array(
-							'href'               => array(),
-							'target'             => array(),
-							'rel'                => array(),
-							'class'              => array(),
-							'data-jptracks-name' => array(),
-						),
-					)
-				);
-				?>
-														</p>
 			</div>
 		</div>
 		<?php
