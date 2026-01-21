@@ -17,6 +17,7 @@ Here is the current list of tasks handled by this action:
 - Triage Issues (`triageIssues`): Adds labels to issues based on issue content, and send Slack notifications depending on Priority.
 - Gather support references (`gatherSupportReferences`): Adds a new comment with a list of all support references on the issue, and escalates that issue via a Slack message if needed.
 - Reply to customers Reminder ( `replyToCustomersReminder` ): sends a Slack message about closed issues to remind Automatticians to update customers.
+- Check If Docs Needed (`checkIfDocsNeeded`): Uses AI to analyze PR changes and flag user-facing PRs with the `[Status] UI Changes` label. Sends a Slack notification to the quality channel when configured.
 
 Some of the tasks are may not satisfy your needs. If that's the case, you can use the `tasks` option to limit the action to the list of tasks you need in your repo. See the example below to find out more.
 
@@ -86,7 +87,7 @@ The action relies on the following parameters.
 - (Optional) `project_board_url` is the URL of a GitHub Project Board. We'll automate some of the work on that board in the `triageIssues` task.
 - (Optional) `labels_team_assignments` is a list of features you can provide, with matching team names, as specified in the "Team" field of your GitHub Project Board used for the `triageIssues` task, and lists of labels in use in your repository.
 - (Optional) `ai_labeling_enabled` is a boolean value that allows you to enable or disable the AI labeling of issues. The default value is `false`.
-- (Optional) `openai_api_key` is the API key for OpenAI. This is required if you want to use the `triageIssues` task to automatically add labels to your issues. **Note**: this option is only available for Automattic-hosted repositories.
+- (Optional) `openai_api_key` is the API key for OpenAI. This is required if you want to use the `triageIssues` or the `checkIfDocsNeeded` task to automatically add labels to your issues. **Note**: this option is only available for Automattic-hosted repositories.
 
 #### How to create a Slack bot and get your SLACK_TOKEN
 

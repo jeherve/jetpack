@@ -1,0 +1,272 @@
+const { getInput } = require( '@actions/core' );
+const debug = require( '../../utils/debug' );
+const getDiff = require( '../../utils/get-diff' );
+const getLabels = require( '../../utils/labels/get-labels' );
+const sendOpenAiRequest = require( '../../utils/openai/send-request' );
+const sendSlackMessage = require( '../../utils/slack/send-slack-message' );
+
+/* global GitHub, WebhookPayloadPullRequest */
+
+/**
+ * Clean up the PR body content for AI processing.
+ * Remove links and HTML from the content.
+ *
+ * @param {string} content - PR body content.
+ * @return {string} Cleaned up content.
+ */
+function cleanContent( content ) {
+	if ( ! content ) {
+		return '';
+	}
+
+	// Remove markdown links [text](url), but keep the text.
+	content = content.replace( /\[([^\]]*)\]\([^)]+\)/g, '$1' );
+
+	// Remove HTML links <a ...>text</a>, but keep the text.
+	content = content.replace( /<a\b[^>]*>(.*?)<\/a>/gi, '$1' );
+
+	// Replace bare URLs with [link].
+	content = content.replace( /https?:\/\/\S+/g, '[link]' );
+
+	// Remove complete HTML comments, applying repeatedly to avoid incomplete multi-character sanitization.
+	let previousContent;
+	do {
+		previousContent = content;
+		content = content.replace( /<!--[\s\S]*?-->/g, '' );
+	} while ( content !== previousContent );
+
+	// Remove incomplete HTML comments (opening tag without closing) by truncating at the first `<!--`.
+	const incompleteCommentIndex = content.indexOf( '<!--' );
+	if ( incompleteCommentIndex !== -1 ) {
+		content = content.slice( 0, incompleteCommentIndex );
+	}
+
+	return content;
+}
+
+/**
+ * Sanitize content.
+ *
+ * @param {string} content - Content to sanitize.
+ * @return {string} Sanitized content.
+ */
+function sanitizeForPrompt( content ) {
+	if ( ! content ) {
+		return '';
+	}
+
+	// Replace sequences of three or more backticks (which could break markdown code blocks)
+	// with a safe placeholder. This prevents prompt injection via code block delimiters.
+	// This is the critical fix: triple backticks would prematurely close the code block.
+	content = content.replace( /```+/g, '[code-fence]' );
+
+	// Escape backslashes first, then backticks.
+	// Order matters: if we escape backticks first, then a `\` followed by `` ` ``
+	// would become `\\`` which is ambiguous. By escaping backslashes first,
+	// we ensure proper encoding of both characters.
+	content = content.replace( /\\/g, '\\\\' );
+
+	return content.replace( /`/g, '\\`' );
+}
+
+/**
+ * Build the prompt for the AI to analyze the PR.
+ *
+ * @param {string} title - PR title.
+ * @param {string} body  - PR body (cleaned).
+ * @param {string} diff  - PR diff (cleaned).
+ * @return {string} The prompt for the AI.
+ */
+function buildPrompt( title, body, diff ) {
+	const sanitizedTitle = sanitizeForPrompt( title || '' );
+	const sanitizedBody = sanitizeForPrompt( body || '' );
+	const sanitizedDiff = sanitizeForPrompt( diff || '' );
+
+	return `You are analyzing a GitHub Pull Request to determine if users will experience something DIFFERENT after this change is deployed.
+
+The key question is: "Will users notice any difference in behavior, appearance, or functionality?"
+
+Changes that ARE user-facing (flag these):
+- New UI elements (buttons, forms, layouts, modals)
+- Modified UI appearance (styling, layout, visual changes)
+- Changed text that users read (labels, messages, help text, error messages)
+- New or modified features users interact with
+- Changed behavior in response to user actions
+- Changes to public APIs that external developers consume
+
+Changes that are NOT user-facing (do NOT flag these):
+- Refactoring code without changing behavior (moving code to new files, renaming internal variables, restructuring classes)
+- Code cleanup that preserves identical functionality
+- Test-only changes (adding, modifying, or removing tests)
+- Internal tooling or build configuration
+- Developer documentation and code comments
+- Dependency updates with no behavior change
+- CI/CD configuration changes
+- Performance optimizations with no visible behavior change
+
+IMPORTANT: If a PR moves, reorganizes, or refactors code that relates to user-visible features but does NOT change what users see or experience, it is NOT user-facing. The question is not "does this code touch something users see?" but "will users see something DIFFERENT?"
+
+Here is the PR title:
+${ sanitizedTitle }
+
+Here is the PR description:
+${ sanitizedBody || '(No description provided)' }
+
+Here is the code diff:
+\`\`\`
+${ sanitizedDiff }
+\`\`\`
+
+Analyze this PR and determine if users will experience something different after this change.
+
+Respond with a JSON object in this exact format:
+{
+  "is_user_facing": boolean,
+  "confidence": "high" | "medium" | "low",
+  "reason": "Brief explanation (1-2 sentences)"
+}`;
+}
+
+/**
+ * Check if a PR contains user-facing changes using AI analysis.
+ * If user-facing with medium/high confidence, add the [Status] UI Changes label.
+ *
+ * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
+ * @param {GitHub}                    octokit - Initialized Octokit REST client.
+ */
+async function checkIfDocsNeeded( payload, octokit ) {
+	const {
+		pull_request: { number, body, title, merged },
+		repository: {
+			owner: { login: ownerLogin },
+			name,
+		},
+	} = payload;
+
+	// Skip if the PR was closed without being merged.
+	if ( ! merged ) {
+		debug( `check-if-docs-needed: PR #${ number } was closed without being merged. Skipping.` );
+		return;
+	}
+
+	const uiChangesLabel = '[Status] UI Changes';
+
+	// Check if OpenAI API key is provided.
+	const apiKey = getInput( 'openai_api_key' );
+	if ( ! apiKey ) {
+		debug( `check-if-docs-needed: No OpenAI key is provided. Bail.` );
+		return;
+	}
+
+	// Fetch current labels.
+	const prLabels = await getLabels( octokit, ownerLogin, name, number );
+
+	// Check if PR already has the UI Changes label.
+	if ( prLabels.includes( uiChangesLabel ) ) {
+		debug(
+			`check-if-docs-needed: PR #${ number } already has "${ uiChangesLabel }" label. Skipping.`
+		);
+		return;
+	}
+
+	// Skip if PR title contains "revert" (case-insensitive).
+	if ( /revert/i.test( title ) ) {
+		debug( `check-if-docs-needed: PR #${ number } title contains "revert". Skipping.` );
+		return;
+	}
+
+	// Fetch the diff.
+	let diff;
+	try {
+		diff = await getDiff( octokit, ownerLogin, name, number );
+	} catch ( error ) {
+		debug( `check-if-docs-needed: Failed to fetch diff for PR #${ number }: ${ error }` );
+		return;
+	}
+
+	// Check if diff is too small to analyze.
+	if ( ! diff || diff.length < 50 ) {
+		debug( `check-if-docs-needed: PR #${ number } diff is too small to analyze. Skipping.` );
+		return;
+	}
+
+	// Clean the PR body and build the prompt.
+	const cleanedBody = cleanContent( body );
+	const prompt = buildPrompt( title, cleanedBody, diff );
+
+	debug( `check-if-docs-needed: Sending PR #${ number } to OpenAI for analysis.` );
+
+	// Call OpenAI.
+	const response = await sendOpenAiRequest( prompt, 'json_object' );
+
+	if ( ! response ) {
+		debug(
+			`check-if-docs-needed: OpenAI request returned no response for PR #${ number }. Skipping docs check.`
+		);
+		return;
+	}
+
+	debug( `check-if-docs-needed: OpenAI response for PR #${ number }: ${ response }` );
+
+	// Parse the response.
+	let result;
+	try {
+		result = JSON.parse( response );
+	} catch ( error ) {
+		debug(
+			`check-if-docs-needed: Failed to parse OpenAI response for PR #${ number }: ${ error }`
+		);
+		return;
+	}
+
+	const isUserFacing = typeof result?.is_user_facing === 'boolean' ? result.is_user_facing : false;
+	const confidence =
+		result?.confidence &&
+		typeof result.confidence === 'string' &&
+		[ 'low', 'medium', 'high' ].includes( result.confidence.trim().toLowerCase() )
+			? result.confidence.trim().toLowerCase()
+			: 'low';
+	const reason = result?.reason && typeof result.reason === 'string' ? result.reason.trim() : '';
+
+	// Apply UI Changes label if user-facing with medium or high confidence.
+	if ( isUserFacing && ( confidence === 'high' || confidence === 'medium' ) ) {
+		debug(
+			`check-if-docs-needed: PR #${ number } is user-facing (confidence: ${ confidence }). Adding "${ uiChangesLabel }" label. Reason: ${ reason }`
+		);
+		await octokit.rest.issues.addLabels( {
+			owner: ownerLogin,
+			repo: name,
+			issue_number: number,
+			labels: [ uiChangesLabel ],
+		} );
+
+		// Send Slack notification if quality channel is configured.
+		const slackQualityChannel = getInput( 'slack_quality_channel' );
+		const slackToken = getInput( 'slack_token' );
+
+		if ( slackQualityChannel && slackToken ) {
+			debug( `check-if-docs-needed: Sending Slack notification for PR #${ number }.` );
+			try {
+				await sendSlackMessage(
+					`This PR was flagged as containing user-facing changes. Please review and update documentation if needed.\n\n*AI reasoning:* ${ reason }`,
+					slackQualityChannel,
+					payload
+				);
+			} catch ( error ) {
+				debug(
+					`check-if-docs-needed: Failed to send Slack notification for PR #${ number }: ${ error }`
+				);
+			}
+		} else if ( slackQualityChannel && ! slackToken ) {
+			debug(
+				`check-if-docs-needed: Slack quality channel is configured but slack_token is missing. Skipping Slack notification for PR #${ number }.`
+			);
+		}
+	} else {
+		debug(
+			`check-if-docs-needed: PR #${ number } is not user-facing or low confidence. Not adding label. Reason: ${ reason }`
+		);
+	}
+}
+
+module.exports = checkIfDocsNeeded;
