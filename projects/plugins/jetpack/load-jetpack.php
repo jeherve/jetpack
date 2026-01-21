@@ -79,5 +79,7 @@ add_action( 'updating_jetpack_version', array( 'Jetpack', 'do_version_bump' ), 1
 add_filter( 'is_jetpack_site', '__return_true' );
 
 require_once JETPACK__PLUGIN_DIR . '3rd-party/3rd-party.php';
+require_once JETPACK__PLUGIN_DIR . 'class-jetpack-review-link.php';
 
 Jetpack::init();
+Jetpack_Review_Link::init();
