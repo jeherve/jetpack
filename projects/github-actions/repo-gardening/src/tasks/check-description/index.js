@@ -182,13 +182,18 @@ function statusEntry( isFailure, checkMessage, severity = 'error' ) {
 }
 
 /**
- * Returns list of projects with missing changelog entries
+ * Returns list of projects modified in this PR, and whether they need changelog entries.
+ *
+ * For each affected project, return an object:
+ * - name: a string with projects/<project name>.
+ * - hasChangelog: a boolean indicating if the project has a changelog entry.
+ * - changeType: a string with the type of the change, an empty string if no type is specified or no changelog exists.
  *
  * @param {GitHub} octokit - Initialized Octokit REST client.
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- * @return {Array} - list of affected projects without changelog entry
+ * @return {Promise<Array>} - Array of affected projects: objects with project name, changelog status and path to changelog file.
  */
 async function getChangelogEntries( octokit, owner, repo, number ) {
 	const baseDir = getPrWorkspace();
@@ -218,10 +223,29 @@ async function getChangelogEntries( octokit, owner, repo, number ) {
 					'CHANGELOG.md'
 			)
 		);
-		const found = files.find( file => file === changelogFile || file.startsWith( changelogDir ) );
-		if ( ! found ) {
-			acc.push( `projects/${ project }` );
+		// Extract the changelog file path.
+		const changelogFilePath = files.find(
+			file => file === changelogFile || file.startsWith( changelogDir )
+		);
+
+		// Extract the change type from the changelog file.
+		// It can be found on the second line of the file, after a Type: prefix.
+		let changeType = '';
+		if ( changelogFilePath ) {
+			const changelogContent = fs
+				.readFileSync( `${ baseDir }/${ changelogFilePath }`, 'utf8' )
+				.toString();
+			const typeMatch = changelogContent.match( /^Type: (.*)$/m );
+			if ( typeMatch ) {
+				changeType = typeMatch[ 1 ];
+			}
 		}
+
+		acc.push( {
+			name: `projects/${ project }`,
+			hasChangelog: !! changelogFilePath,
+			changeType,
+		} );
 		return acc;
 	}, [] );
 }
@@ -231,9 +255,11 @@ async function getChangelogEntries( octokit, owner, repo, number ) {
  * Covers:
  * - Short PR description
  * - Missing `[Status]` label
+ * - Missing `[Type]` label
  * - Missing "Testing instructions"
  * - Missing Changelog entry
  * - Privacy section
+ * - Also includes information about the changelog entries.
  *
  * Note: All the checks should be truthy to resolve as success check.
  *
@@ -249,7 +275,13 @@ async function getStatusChecks( payload, octokit ) {
 	const hasLongDescription = body?.length > 200;
 	const hasTesting = !! body?.includes( 'Testing instructions' );
 	const hasPrivacy = !! body?.includes( 'data or activity we track or use' );
-	const projectsWithoutChangelog = await getChangelogEntries( octokit, ownerLogin, repo, number );
+	const changelogEntries = await getChangelogEntries( octokit, ownerLogin, repo, number );
+	const projectsWithoutChangelog = changelogEntries.reduce( ( acc, project ) => {
+		if ( ! project.hasChangelog ) {
+			acc.push( project.name );
+		}
+		return acc;
+	}, [] );
 	const isFromContributor = head.repo.full_name === base.repo.full_name;
 
 	const prLabels = await getLabels( octokit, ownerLogin, repo, number );
@@ -259,6 +291,7 @@ async function getStatusChecks( payload, octokit ) {
 	);
 
 	return {
+		changelogEntries,
 		hasLongDescription,
 		hasStatusLabels,
 		hasTesting,
@@ -434,6 +467,64 @@ async function updateLabels( payload, octokit ) {
 }
 
 /**
+ * Based off the changelog entries committed with the PR,
+ * let's attempt to infer the type of the PR.
+ * If we can infer a type, we'll add a label to the PR, matching that type.
+ * If we cannot, we'll leave the PR as is.
+ *
+ * @param {WebhookPayloadPullRequest} payload          - Pull request event payload.
+ * @param {GitHub}                    octokit          - Initialized Octokit REST client.
+ * @param {Array}                     changelogEntries - List of changelog entries.
+ *
+ * @return {Promise<boolean>} Promise resolving to boolean ; true if we were able to infer a type, false otherwise.
+ */
+async function inferType( payload, octokit, changelogEntries ) {
+	const {
+		repository: {
+			owner: { login: ownerLogin },
+			name: repo,
+		},
+		pull_request: { number },
+	} = payload;
+
+	// Extract the type of the PR from the changelog entries.
+	let type = '';
+	for ( const entry of changelogEntries ) {
+		if ( entry.changeType ) {
+			type = entry.changeType;
+			break;
+		}
+	}
+	if ( ! type ) {
+		return false;
+	}
+
+	// Mapping between the different changelogger types
+	// (default and custom ones created for the Jetpack plugin)
+	// and the labels we use.
+	const typeMapping = {
+		Bug: [ 'security', 'fixed', 'bugfix' ],
+		Task: [ 'added', 'major' ],
+		Enhancement: [ 'changed', 'enhancement' ],
+		Janitorial: [ 'deprecated', 'removed', 'compat', 'other' ],
+	};
+
+	// Does the PR's type match one of the types we have in our mapping?
+	const prType = Object.keys( typeMapping ).find( key => typeMapping[ key ].includes( type ) );
+	if ( ! prType ) {
+		return false;
+	}
+
+	await octokit.rest.issues.addLabels( {
+		owner: ownerLogin,
+		repo,
+		issue_number: number,
+		labels: [ `[Type] ${ prType }` ],
+	} );
+	return true;
+}
+
+/**
  * Checks the contents of a PR description.
  *
  * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
@@ -462,6 +553,13 @@ async function checkDescription( payload, octokit ) {
 	) {
 		debug( `check-description: Automated stub update, skipping` );
 		return;
+	}
+
+	// If no "[Type]" label is present, let's try to figure out the type of the PR.
+	// We'll use the changelog entries to determine the type of the PR.
+	if ( ! statusChecks.hasTypeLabels && statusChecks.changelogEntries.length ) {
+		debug( `check-description: No type label found, trying to determine the type of the PR` );
+		statusChecks.hasTypeLabels = await inferType( payload, octokit, statusChecks.changelogEntries );
 	}
 
 	debug( `check-description: start building our comment` );

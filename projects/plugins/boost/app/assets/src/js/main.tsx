@@ -20,7 +20,7 @@ const useBoostRouter = () => {
 		if ( shouldGetStarted ) {
 			return redirect( '/getting-started' );
 		}
-		return null;
+		return false;
 	};
 
 	return createHashRouter( [
