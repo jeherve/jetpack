@@ -1,0 +1,4 @@
+Significance: patch
+Type: enhancement
+
+Sharing: Extract block theme notice into reusable component and add it to Likes settings.
