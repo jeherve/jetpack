@@ -2,6 +2,7 @@ import { getInput } from '@actions/core';
 import debug from '../../utils/debug.ts';
 import getDiff from '../../utils/get-diff.ts';
 import getLabels from '../../utils/labels/get-labels.ts';
+import createLinearIssue from '../../utils/linear/create-linear-issue.ts';
 import sendOpenAiRequest from '../../utils/openai/send-request.ts';
 import sendSlackMessage from '../../utils/slack/send-slack-message.ts';
 import type { OctokitClient, PullRequestEvent } from '../../types.ts';
@@ -155,10 +156,11 @@ async function checkIfDocsNeeded(
 	octokit: OctokitClient
 ): Promise< void > {
 	const {
-		pull_request: { number, body, title, merged },
+		pull_request: { number, body, title, merged, html_url: prUrl },
 		repository: {
 			owner: { login: ownerLogin },
 			name,
+			full_name: repoFullName,
 		},
 	} = payload;
 
@@ -279,18 +281,42 @@ async function checkIfDocsNeeded(
 			labels: [ uiChangesLabel ],
 		} );
 
+		// Attempt to create a Linear issue if a Linear team ID is provided.
+		const linearTeamId = getInput( 'linear_product_ambassadors_team_id' );
+
+		let linearIssue: { id: string; url: string; identifier: string } | null = null;
+		if ( linearTeamId ) {
+			debug( `check-if-docs-needed: Creating Linear issue for PR #${ number }.` );
+			const linearDescription = `A pull request was flagged as containing user-facing changes that may require documentation updates.\n\n**Pull request:** [${ title }](${ prUrl })\n**Repository:** ${ repoFullName }\n**AI reasoning:** ${ reason }`;
+
+			linearIssue = await createLinearIssue(
+				`Docs update needed: ${ title }`,
+				linearDescription,
+				linearTeamId
+			);
+
+			if ( linearIssue ) {
+				debug(
+					`check-if-docs-needed: Created Linear issue ${ linearIssue.identifier } for PR #${ number }.`
+				);
+			}
+		}
+
 		// Send Slack notification if product ambassadors channel is configured.
 		const slackProductAmbassadorsChannel = getInput( 'slack_product_ambassadors_channel' );
 		const slackToken = getInput( 'slack_token' );
 
 		if ( slackProductAmbassadorsChannel && slackToken ) {
 			debug( `check-if-docs-needed: Sending Slack notification for PR #${ number }.` );
+
+			let slackMessage = `This PR was flagged as containing user-facing changes. Please review and update documentation if needed.\n\n*AI reasoning:* ${ reason }`;
+
+			if ( linearIssue ) {
+				slackMessage += `\n\nA Linear issue was created to track this: *<${ linearIssue.url }|${ linearIssue.identifier }>*`;
+			}
+
 			try {
-				await sendSlackMessage(
-					`This PR was flagged as containing user-facing changes. Please review and update documentation if needed.\n\n*AI reasoning:* ${ reason }`,
-					slackProductAmbassadorsChannel,
-					payload
-				);
+				await sendSlackMessage( slackMessage, slackProductAmbassadorsChannel, payload );
 			} catch ( error: unknown ) {
 				debug(
 					`check-if-docs-needed: Failed to send Slack notification for PR #${ number }: ${ error }`
